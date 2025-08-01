@@ -4,6 +4,7 @@
 use App\Helpers\JsonHelper;
 use App\Services\HashService;
 use App\Services\ValidatorService;
+use App\Validation\Entities\UserRules;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\Models\User;
@@ -11,43 +12,28 @@ use App\Models\User;
 class UserController
 {
     private $hashService;
-    private $validatorService;   
-    private function ruleCreate() {
-        return [
-            'name' => 'required|min:3',
-            'email' => 'required|email|unique:\App\Models\User,email',
-            'password' => 'required|min:6'
-        ];
-    }
-    private function ruleUpdate(int $id) {
-        return [
-            'name' => 'required|min:3',
-            'email' => 'required|email|unique:\App\Models\User,email,'.$id,
-        ];
-    }
-    private function ruleUpdatePassword() {
-        return [        
-            'id' => 'required|exists:\App\Models\User,id',    
-            'passwordOld' => 'required|min:6',
-            'passwordNew' => 'required|min:6|different:passwordOld'
-        ];
-    }
-    public function __construct(HashService $hashService, ValidatorService $validatorService)
+    private $validatorService; 
+    private $userRules;  
+    
+    public function __construct(HashService $hashService, ValidatorService $validatorService, UserRules $userRules)
     {
         $this->hashService = $hashService;
         $this->validatorService = $validatorService;
+        $this->userRules = $userRules;
     }
+    
     public function index(Request $request, Response $response, array $args): Response
     {        
-        return JsonHelper::ok($response, User::paginate(1));
+        return JsonHelper::ok($response, User::paginate(30));
     }
 
     public function create(Request $request, Response $response, array $args): Response
     {
         $data = (array)$request->getParsedBody();        
-        $validate = $this->validatorService->validate($data, $this->ruleCreate());
-        if ($validate->isFails()){
-            return JsonHelper::error($response, $validate->getErrors());
+        $validate = $this->validatorService->validate($data, $this->userRules->create());
+        if ($validate->isFails())
+        {
+            return JsonHelper::unprocessableEntity($response, $validate->getErrors());
         }
         $data['password'] = $this->hashService->make($data['password']);
         $user = User::create($data);
@@ -58,12 +44,14 @@ class UserController
     {
         $id = $args['id'];
         $data = (array)$request->getParsedBody();        
-        $validate = $this->validatorService->validate($data, $this->ruleUpdate($id));
-        if ($validate->isFails()){
-            return JsonHelper::error($response, $validate->getErrors());
+        $validate = $this->validatorService->validate($data, $this->userRules->update($id));
+        if ($validate->isFails())
+        {
+            return JsonHelper::unprocessableEntity($response, $validate->getErrors());
         }
         $user = User::find($id);
-        if ($user){
+        if ($user)
+        {
             $user->name = $data['name'];
             $user->email = $data['email'];                
             $user->save();
@@ -75,15 +63,18 @@ class UserController
     public function updatePassword(Request $request, Response $response, array $args): Response
     {
         $data = (array)$request->getParsedBody();
-        $validate = $this->validatorService->validate($data, $this->ruleUpdatePassword());
-        if ($validate->isFails()) {
-            return JsonHelper::error($response, $validate->getErrors());
+        $validate = $this->validatorService->validate($data, $this->userRules->updatePassword());
+        if ($validate->isFails()) 
+        {
+            return JsonHelper::unprocessableEntity($response, $validate->getErrors());
         }
         $user = User::find($data['id']);
-        if (!$user){
+        if (!$user)
+        {
             return JsonHelper::notFound($response);
         }
-        if ($this->hashService->check($data['passwordOld'], $user->password)) {
+        if ($this->hashService->check($data['passwordOld'], $user->password)) 
+        {
             $user->password = $this->hashService->make($data['passwordNew']);
             $user->save();
             return JsonHelper::ok($response, $user);

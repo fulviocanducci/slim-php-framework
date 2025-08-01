@@ -6,17 +6,16 @@ use Rakit\Validation\Rule;
 class UniqueRule extends Rule
 {
     protected $message = ":attribute already exists";
-    protected $fillableParams = ['table', 'column', 'except'];
+    protected $fillableParams = ['table', 'column','id','except'];
     public function check($value): bool
     {           
         $table = $this->params["table"];
         $column = $this->params["column"];
+        $id = $this->params["id"];
         $except = $this->params["except"];
-        
-        $query = $table::where($column, $value);
-        if ($except) {
-            $query = $query->where($column,$except);
+        if ($id && $except) {
+            return !$table::where($column, '=', $value)->where($id, '!=', $except)->exists();
         }
-        return !$query->exists();
+        return !$table::where($column, $value)->exists();        
     }
 }
