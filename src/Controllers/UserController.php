@@ -29,7 +29,7 @@ class UserController
         return [        
             'id' => 'required|exists:\App\Models\User,id',    
             'passwordOld' => 'required|min:6',
-            'passwordNew' => 'required|min:6'
+            'passwordNew' => 'required|min:6|different:passwordOld'
         ];
     }
     public function __construct(HashService $hashService, ValidatorService $validatorService)
@@ -45,9 +45,9 @@ class UserController
     public function create(Request $request, Response $response, array $args): Response
     {
         $data = (array)$request->getParsedBody();        
-        $errors = $this->validatorService->validate($data, $this->ruleCreate());
-        if ($errors){
-            return JsonHelper::error($response, $errors);
+        $validate = $this->validatorService->validate($data, $this->ruleCreate());
+        if ($validate->isFails()){
+            return JsonHelper::error($response, $validate->getErrors());
         }
         $data['password'] = $this->hashService->make($data['password']);
         $user = User::create($data);
@@ -58,9 +58,9 @@ class UserController
     {
         $id = $args['id'];
         $data = (array)$request->getParsedBody();        
-        $errors = $this->validatorService->validate($data, $this->ruleUpdate($id));
-        if ($errors){
-            return JsonHelper::error($response, $errors);
+        $validate = $this->validatorService->validate($data, $this->ruleUpdate($id));
+        if ($validate->isFails()){
+            return JsonHelper::error($response, $validate->getErrors());
         }
         $user = User::find($id);
         if ($user){
@@ -75,9 +75,9 @@ class UserController
     public function updatePassword(Request $request, Response $response, array $args): Response
     {
         $data = (array)$request->getParsedBody();
-        $errors = $this->validatorService->validate($data, $this->ruleUpdatePassword());
-        if ($errors){
-            return JsonHelper::error($response, $errors);
+        $validate = $this->validatorService->validate($data, $this->ruleUpdatePassword());
+        if ($validate->isFails()) {
+            return JsonHelper::error($response, $validate->getErrors());
         }
         $user = User::find($data['id']);
         if (!$user){

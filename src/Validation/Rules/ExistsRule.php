@@ -1,4 +1,4 @@
-<?php
+<?php //https://github.com/rakit/validation
 namespace App\Validation\Rules;
 
 use Rakit\Validation\Rule;
