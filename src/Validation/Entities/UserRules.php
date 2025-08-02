@@ -1,6 +1,7 @@
 <?php namespace App\Validation\Entities;
 
-class UserRules {
+class UserRules 
+{
     public function create() 
     {
         return [

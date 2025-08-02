@@ -11,9 +11,9 @@ use App\Models\User;
 
 class UserController
 {
-    private $hashService;
-    private $validatorService; 
-    private $userRules;  
+    private HashService $hashService;
+    private ValidatorService $validatorService;
+    private UserRules $userRules;  
     
     public function __construct(HashService $hashService, ValidatorService $validatorService, UserRules $userRules)
     {
